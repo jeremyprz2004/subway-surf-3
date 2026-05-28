@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Choclito 3D: 2 Minutos de Energía</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: #0f172a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Contenedor vertical estricto estilo Smartphone */
+        #phone-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 420px;
+            max-height: 750px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            border-radius: 24px;
+            overflow: hidden;
+            background: #020617;
+            border: 4px solid #475569;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #bae6fd, #e0f2fe);
+        }
+
+        /* Capas superpuestas interactivas (Menús) */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 25px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .hidden { display: none !important; }
+
+        h2 {
+            font-size: 32px;
+            color: #facc15;
+            margin-bottom: 5px;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.6);
+        }
+
+        .educational-tip {
+            background: rgba(234, 179, 8, 0.2);
+            border: 2px dashed #eab308;
+            border-radius: 16px;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 15px;
+            line-height: 1.4;
+            color: #fef08a;
+            font-weight: bold;
+        }
+
+        p {
+            font-size: 15px;
+            color: #cbd5e1;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .btn-play {
+            background: linear-gradient(to bottom, #facc15, #eab308);
+            color: #1e293b;
+            border: none;
+            padding: 16px 45px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 50px;
+            box-shadow: 0 6px 25px rgba(234, 179, 8, 0.5);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .btn-play:active {
+            transform: scale(0.95);
+        }
+
+        /* Indicadores de Fase Visuales en Pantalla */
+        #phase-banner {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(234, 179, 8, 0.9);
+            color: #1e293b;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            z-index: 5;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            pointer-events: none;
+            transition: all 0.4s ease;
+        }
+        
+        .phase-run {
+            background: #ef4444 !important;
+            color: #ffffff !important;
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateX(-50%) scale(1); }
+            to { transform: translateX(-50%) scale(1.08); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="phone-container">
+        <!-- Banner Dinámico de Etapas -->
+        <div id="phase-banner" class="hidden">Etapa 1: ¡Recolecta Carbohidratos!</div>
+
+        <canvas id="gameCanvas" width="360" height="640"></canvas>
+
+        <!-- Pantalla de Inicio -->
+        <div id="start-screen" class="overlay">
+            <h2>Choclito 3D 🌽</h2>
+            <p style="color: #fef08a; font-weight: bold; font-size: 18px;">2 Minutos de Energía</p>
+            <p>¡Ayuda a Choclito a llegar al patio del colegio para el recreo antes de que se acabe el tiempo!</p>
+            
+            <div class="educational-tip">
+                “¡Entre más carbohidratos saludables recojas, más energía tendrás!”
+            </div>
+
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 25px;">
+                <b>Controles (Una Sola Mano):</b><br>
+                🥗 <b>Fase 1:</b> Toca izquierda o derecha para moverte.<br>
+                ⚡ <b>Fase 2:</b> ¡Barra llena! Toca cualquier lado para saltar vallas.
+            </p>
+            
+            <button class="btn-play" onclick="startGameHandle()">¡A JUGAR!</button>
+        </div>
+
+        <!-- Pantalla de Victoria (Etapa 4) -->
+        <div id="win-screen" class="overlay hidden">
+            <h2 style="color: #4ade80;">¡Llegaste al Recreo! 🎉</h2>
+            <p id="win-text">¡Excelente trabajo! Choclito cargó sus energías y llegó al patio a tiempo.</p>
+            <div class="educational-tip" style="border-color: #4ade80; color: #bbf7d0;">
+                ¡Los carbohidratos saludables te dan la fuerza para jugar sin cansarte!
+            </div>
+            <button class="btn-play" onclick="startGameHandle()">JUGAR DE NUEVO</button>
+        </div>
+
+        <!-- Pantalla de Derrota -->
+        <div id="lose-screen" class="overlay hidden">
+            <h2 style="color: #f43f5e;">¡Se acabó el tiempo! ⏰</h2>
+            <p>Te faltó velocidad. ¡Elige más carbohidratos saludables la próxima vez para correr como un rayo!</p>
+            <button class="btn-play" onclick="startGameHandle()">REINTENTAR</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const startScreen = document.getElementById('start-screen');
+        const winScreen = document.getElementById('win-screen');
+        const loseScreen = document.getElementById('lose-screen');
+        const winText = document.getElementById('win-text');
+        const phaseBanner = document.getElementById('phase-banner');
+
+        // Lógica de juego y estados
+        let gameState = 'MENU'; 
+        let timeLeft = 120; 
+        let timerInterval = null;
+        let backgroundY = 0; 
+        let distanceProgress = 0;
+        const targetDistance = 1200; 
+
+        let player;
+        let items = [];
+        let obstacles = [];
+        let particles = [];
+        let globalRotation3D = 0; 
+
+        const foodTypes = [
+            { name: 'Plátano', color: '#facc15', sideColor: '#ca8a04', text: '🍌' },
+            { name: 'Avena', color: '#ffedd5', sideColor: '#fed7aa', text: '🥣' },
+            { name: 'Arroz', color: '#ffffff', sideColor: '#cbd5e1', text: '🍚' },
+            { name: 'Camote', color: '#c084fc', sideColor: '#9333ea', text: '🍠' }
+        ];
+
+        // Definición de Choclito 3D
+        player = {
+            x: canvas.width / 4 - 22,
+            y: canvas.height - 160,
+            baseY: canvas.height - 160, 
+            vy: 0,
+            width: 44,
+            height: 75,
+            depth: 16, 
+            targetLane: 0, // 0 = Izquierda, 1 = Derecha
+            energy: 0,
+            maxEnergy: 100,
+            isCharged: false, // Controla si está en Etapa 3 (¡A Correr y Saltar!)
+            grounded: true,
+            jumpForce: 15
+        };
+
+        // Escuchadores de eventos táctiles directamente en el área de juego
+        canvas.addEventListener('touchstart', handleControls, {passive: false});
+        canvas.addEventListener('mousedown', handleControls);
+
+        function handleControls(e) {
+            if (gameState !== 'PLAYING') return;
+            
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let rect = canvas.getBoundingClientRect();
+            let touchX = (clientX - rect.left) * (canvas.width / rect.width);
+
+            if (player.isCharged) {
+                // ETAPA 3: ¡A CORRER Y SALTAR! (Cualquier toque en la pantalla provoca un salto)
+                if (player.grounded) {
+                    player.vy = -player.jumpForce;
+                    player.grounded = false;
+                    createJumpParticles(player.x + player.width/2, player.y + player.height);
+                    playTone(180, 0.1); 
+                }
+            } else {
+                // ETAPA 1: RECOLECTA CARBOHIDRATOS (Mitad izquierda o derecha para cambiar carril)
+                if (touchX < canvas.width / 2) {
+                    player.targetLane = 0; 
+                } else {
+                    player.targetLane = 1; 
+                }
+            }
+            if (e.cancelable) e.preventDefault();
+        }
+
+        // Ejecución limpia del inicio/reinicio del juego
+        function startGameHandle() {
+            startScreen.classList.add('hidden');
+            winScreen.classList.add('hidden');
+            loseScreen.classList.add('hidden');
+            phaseBanner.classList.remove('hidden');
+            updatePhaseBanner("Etapa 1: ¡Recolecta Alimentos!", false);
+
+            // Reinicio completo de parámetros
+            timeLeft = 120;
+            distanceProgress = 0;
+            items = [];
+            obstacles = [];
+            particles = [];
+            player.energy = 0;
+            player.isCharged = false;
+            player.targetLane = 0;
+            player.x = canvas.width / 4 - player.width / 2;
+            player.y = player.baseY;
+            player.vy = 0;
+            player.grounded = true;
+
+            gameState = 'PLAYING';
+
+            // Temporizador Escolar (2 Minutos)
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (gameState === 'PLAYING') {
+                    timeLeft--;
+                    if (timeLeft <= 0) endGame('GAMEOVER');
+                }
+            }, 1000);
+            
+            playTone(440, 0.15);
+        }
+
+        // Bucle Principal Nivelado
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updatePhaseBanner(text, isRunning) {
+            phaseBanner.innerText = text;
+            if (isRunning) {
+                phaseBanner.classList.add('phase-run');
+            } else {
+                phaseBanner.classList.remove('phase-run');
+            }
+        }
+
+        function update() {
+            globalRotation3D += 0.05;
+
+            if (gameState !== 'PLAYING') {
+                backgroundY += 2; // El fondo se mueve lento en los menús
+                return;
+            }
+
+            // ETAPA 3: Velocidad aumentada si está cargado
+            let speed = player.isCharged ? 8.5 : 5;
+            backgroundY += speed;
+            distanceProgress += speed * 0.08;
+
+            // ETAPA 4: Llegada al Recreo (Meta cumplida)
+            if (distanceProgress >= targetDistance) {
+                endGame('WIN');
+                return;
+            }
+
+            // Movimiento lateral suave e intuitivo
+            let targetX = player.targetLane === 0 ? canvas.width / 4 - player.width / 2 : (canvas.width * 3 / 4) - player.width / 2;
+            player.x += (targetX - player.x) * 0.25;
+
+            // Mecánica de Salto e Gravedad en 3D
+            if (!player.grounded) {
+                player.vy += 0.7; 
+                player.y += player.vy;
+
+                if (player.y >= player.baseY) {
+                    player.y = player.baseY;
+                    player.vy = 0;
+                    player.grounded = true;
+                }
+            }
+
+            // --- GESTIÓN DE ETAPA 1 Y 2 (Generar e interactuar con Comida) ---
+            if (!player.isCharged) {
+                if (Math.random() < 0.04 && items.length < 4) {
+                    let lane = Math.random() > 0.5 ? 1 : 0;
+                    items.push({
+                        x: lane === 0 ? canvas.width / 4 : canvas.width * 3 / 4,
+                        y: -50,
+                        size: 20,
+                        type: foodTypes[Math.floor(Math.random() * foodTypes.length)],
+                        lane: lane
+                    });
+                }
+            } else {
+                // Si la barra está llena, limpiamos la comida restante progresivamente
+                items = [];
+            }
+
+            // --- GESTIÓN DE ETAPA 3 (¡A Correr y Saltar Obstáculos!) ---
+            if (player.isCharged) {
+                if (Math.random() < 0.025 && obstacles.length < 2) {
+                    let lane = Math.random() > 0.5 ? 1 : 0;
+                    obstacles.push({
+                        x: (lane === 0 ? canvas.width / 4 : canvas.width * 3 / 4) - 25,
+                        y: -60,
+                        width: 50,
+                        height: 32,
+                        depth: 14,
+                        lane: lane
+                    });
+                }
+            }
+
+            // Colisión e interacción con alimentos (ETAPA 2: Carga de Energía)
+            items.forEach((item, index) => {
+                item.y += speed;
+                if (item.y > player.y && item.y < player.y + player.height && item.lane === player.targetLane) {
+                    player.energy += 25; // Sube la batería
+                    playTone(550, 0.06); 
+                    createParticles(item.x, item.y, item.type.color);
+                    
+                    if (player.energy >= player.maxEnergy) {
+                        player.energy = player.maxEnergy;
+                        player.isCharged = true; // Activa Etapa 3
+                        updatePhaseBanner("Etapa 3: ¡A Correr y Saltar! 🏃‍♂️", true);
+                    }
+                    items.splice(index, 1);
+                }
+                if (item.y > canvas.height) items.splice(index, 1);
+            });
+
+            // Colisión con obstáculos (Pierde energía si no salta a tiempo)
+            obstacles.forEach((obs, index) => {
+                obs.y += speed;
+                if (obs.y + obs.height > player.y + 15 && obs.y < player.y + player.height && obs.lane === player.targetLane) {
+                    if (player.grounded) { // Choca si está en el suelo
+                        player.energy -= 30;
+                        playTone(140, 0.25); 
+                        createParticles(obs.x + 25, obs.y, '#f43f5e');
+                        obstacles.splice(index, 1);
+                        
+                        if (player.energy < player.maxEnergy) {
+                            player.isCharged = false; // Regresa a recolectar si la barra se vacía
+                            updatePhaseBanner("Etapa 1: ¡Recolecta Alimentos!", false);
+                        }
+                    }
+                }
+                if (obs.y > canvas.height) obstacles.splice(index, 1);
+            });
+
+            // Partículas
+            particles.forEach((p, index) => {
+                p.x += p.vx; p.y += p.vy; p.alpha -= 0.04;
+                if (p.alpha <= 0) particles.splice(index, 1);
+            });
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Patio escolar en movimiento
+            drawBackgroundEscolar();
+
+            // Pistas del patio de recreo
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(canvas.width/4 - 40, 0, 80, canvas.height);
+            ctx.fillRect(canvas.width*3/4 - 40, 0, 80, canvas.height);
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.setLineDash([15, 15]);
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/4 + 40, 0); ctx.lineTo(canvas.width/4 + 40, canvas.height);
+            ctx.moveTo(canvas.width*3/4 - 40, 0); ctx.lineTo(canvas.width*3/4 - 40, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]); 
+
+            // Renderizado de Alimentos Isométricos 3D
+            items.forEach(item => {
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                let aspectRot = Math.sin(globalRotation3D) * item.size;
+
+                ctx.fillStyle = item.type.sideColor;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, Math.abs(aspectRot), item.size * 0.6, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = item.type.color;
+                ctx.beginPath();
+                ctx.ellipse(0, -6, Math.abs(aspectRot), item.size * 0.6, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.font = '18px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(item.type.text, 0, 1);
+                ctx.restore();
+            });
+
+            // Renderizado de Vallas Escolares en 3D Extruido
+            obstacles.forEach(obs => {
+                ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                ctx.fillRect(obs.x - 4, obs.y + obs.height - 4, obs.width + 8, 8);
+
+                // Extrusión Lateral 3D
+                ctx.fillStyle = '#9f1239';
+                ctx.beginPath();
+                ctx.moveTo(obs.x + obs.width, obs.y);
+                ctx.lineTo(obs.x + obs.width + obs.depth, obs.y - obs.depth*0.5);
+                ctx.lineTo(obs.x + obs.width + obs.depth, obs.y + obs.height - obs.depth*0.5);
+                ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+                ctx.fill();
+
+                // Cara Frontal
+                ctx.fillStyle = '#f43f5e';
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(obs.x + 5, obs.y + 5, obs.width - 10, 5);
+                ctx.fillRect(obs.x + 5, obs.y + 18, obs.width - 10, 5);
+            });
+
+            // Renderizado de Partículas
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Renderizado del protagonista: ¡CHOCLITO 3D!
+            drawChoclito3D();
+
+            // Interfaz HUD superior fija
+            drawHUD();
+        }
+
+        function drawChoclito3D() {
+            ctx.save();
+            
+            // Sombra adaptativa al salto
+            let shadowScale = Math.max(0.4, 1 - (player.baseY - player.y) * 0.005);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.beginPath();
+            ctx.ellipse(player.x + player.width/2, player.baseY + player.height, 22 * shadowScale, 6 * shadowScale, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            if (player.isCharged) {
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#eab308';
+            }
+
+            // 1. Extrusión Lateral 3D (Efecto de Grosor de la Mazorca)
+            ctx.fillStyle = '#ca8a04'; 
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width, player.y + 15);
+            ctx.lineTo(player.x + player.width + player.depth, player.y + 15 - player.depth*0.5);
+            ctx.lineTo(player.x + player.width + player.depth, player.y + player.height - player.depth*0.5);
+            ctx.lineTo(player.x + player.width, player.y + player.height);
+            ctx.fill();
+
+            // 2. Cuerpo Principal (Silueta curva de grano de maíz)
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width/2, player.y);
+            ctx.bezierCurveTo(player.x + player.width + 5, player.y + 10, player.x + player.width, player.y + player.height, player.x + player.width/2, player.y + player.height);
+            ctx.bezierCurveTo(player.x, player.y + player.height, player.x - 5, player.y + 10, player.x + player.width/2, player.y);
+            ctx.fill();
+
+            // Detalles de Granitos internos
+            ctx.strokeStyle = '#eab308';
+            ctx.lineWidth = 1.5;
+            for(let i = 1; i <= 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(player.x + (player.width/4)*i, player.y + 15);
+                ctx.lineTo(player.x + (player.width/4)*i, player.y + player.height - 5);
+                ctx.stroke();
+            }
+
+            // 3. Hojas Verdes Isométricas (Chala lateral de Choclito)
+            ctx.fillStyle = '#4ade80'; 
+            ctx.beginPath();
+            ctx.moveTo(player.x, player.y + player.height);
+            ctx.quadraticCurveTo(player.x - 12, player.y + player.height/2, player.x + 4, player.y + 28);
+            ctx.quadraticCurveTo(player.x, player.y + player.height/2, player.x + player.width/4, player.y + player.height);
+            ctx.fill();
+
+            ctx.fillStyle = '#22c55e'; 
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width, player.y + player.height);
+            ctx.quadraticCurveTo(player.x + player.width + 12, player.y + player.height/2, player.x + player.width - 4, player.y + 28);
+            ctx.quadraticCurveTo(player.x + player.width, player.y + player.height/2, player.x + player.width * 0.75, player.y + player.height);
+            ctx.fill();
+
+            // 4. Expresión del rostro (Grandes Ojos Cartoon y sonrisa animada)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(player.x + 14, player.y + 35, 6, 0, Math.PI*2);
+            ctx.arc(player.x + 28, player.y + 35, 6, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(player.x + 14, player.y + 35, 3, 0, Math.PI*2);
+            ctx.arc(player.x + 28, player.y + 35, 3, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(player.x + 21, player.y + 46, 7, 0, Math.PI);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawBackgroundEscolar() {
+            let offset = backgroundY % 100;
+            ctx.fillStyle = '#86efac'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Setos y plantas escolares decorativas
+            ctx.fillStyle = '#16a34a';
+            for (let y = -100 + offset; y < canvas.height; y += 150) {
+                ctx.fillRect(6, y, 16, 55);
+                ctx.fillRect(canvas.width - 22, y + 70, 16, 55);
+            }
+        }
+
+        function drawHUD() {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillRect(0, 0, canvas.width, 90);
+
+            // Temporizador de 2:00 minutos grande
+            let min = Math.floor(timeLeft / 60);
+            let seg = timeLeft % 60;
+            let formattedTime = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
+            
+            ctx.fillStyle = timeLeft < 20 ? '#ef4444' : '#ffffff';
+            ctx.font = 'bold 22px "Courier New"';
+            ctx.textAlign = 'left';
+            ctx.fillText(`⏰ ${formattedTime}`, 15, 35);
+
+            // Barra de Progreso hacia la Meta Escolar
+            let progress = Math.min(100, (distanceProgress / targetDistance) * 100);
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(15, 54, 110, 8);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(15, 54, progress, 8);
+            ctx.font = 'bold 9px Arial';
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText('CAMINO AL RECREO', 15, 76);
+
+            // Título de Energía de Carbohidratos
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 11px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText('BATERÍA DE ENERGÍA', canvas.width - 15, 25);
+
+            // Batería contenedora
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(canvas.width - 135, 35, 120, 18);
+
+            let barWidth = (player.energy / player.maxEnergy) * 116;
+            ctx.fillStyle = player.isCharged ? '#ef4444' : '#eab308';
+            ctx.fillRect(canvas.width - 133, 37, barWidth, 14);
+        }
+
+        function playTone(freq, dur) {
+            try {
+                let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+                osc.stop(audioCtx.currentTime + dur);
+            } catch(e) {}
+        }
+
+        function createParticles(x, y, color) {
+            for(let i=0; i<6; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4,
+                    radius: Math.random() * 3 + 2, color: color, alpha: 1
+                });
+            }
+        }
+
+        function createJumpParticles(x, y) {
+            for(let i=0; i<8; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 5, vy: -Math.random() * 3,
+                    radius: Math.random() * 2 + 1, color: '#ffffff', alpha: 1
+                });
+            }
+        }
+
+        function endGame(result) {
+            gameState = result;
+            clearInterval(timerInterval);
+            phaseBanner.classList.add('hidden');
+
+            if (result === 'WIN') {
+                let m = Math.floor((120 - timeLeft)/60);
+                let s = (120 - timeLeft)%60;
+                winText.innerText = `¡Excelente trabajo! Choclito llegó al patio a tiempo en un récord de ${m}m y ${s}s gracias a la energía saludable de los carbohidratos.`;
+                winScreen.classList.remove('hidden');
+                playTone(580, 0.4);
+            } else {
+                loseScreen.classList.remove('hidden');
+                playTone(140, 0.4);
+            }
+        }
+
+        // Ejecutar bucle del fondo inmediatamente en segundo plano
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
